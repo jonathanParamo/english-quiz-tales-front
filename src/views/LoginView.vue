@@ -9,10 +9,14 @@ const password = ref('')
 const router = useRouter()
 
 const handleLogin = async () => {
-  const response = await store.login(email.value, password.value)
+  const result = await store.login(email.value, password.value)
 
-  document.cookie = `token=${response.token}; path=/; samesite=lax`
-  router.push('/home')
+  if (result && typeof result === 'object' && 'token' in result) {
+    document.cookie = `token=${(result as any).token}; path=/; samesite=lax`
+    router.push('/home')
+  } else {
+    store.error = 'Login fallido: respuesta inválida'
+  }
 }
 </script>
 
