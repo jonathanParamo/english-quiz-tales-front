@@ -1,14 +1,25 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
+import { useRouter } from 'vue-router'
 
 const store = useUserStore()
+const router = useRouter()
+
 const username = ref('')
 const email = ref('')
 const password = ref('')
 
 const handleSignup = async () => {
-  await store.signup(username.value, email.value, password.value)
+  store.error = null
+
+  const success = await store.signup(username.value, email.value, password.value)
+
+  if (success) {
+    router.push('/home')
+  } else {
+    store.error = store.error || 'Registro fallido: verifica tus datos'
+  }
 }
 </script>
 

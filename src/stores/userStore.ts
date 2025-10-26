@@ -10,17 +10,17 @@ export const useUserStore = defineStore('user', {
   }),
 
   actions: {
-    async signup(username: string, email: string, password: string) {
+    async signup(username: string, email: string, password: string): Promise<boolean> {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
       if (!emailRegex.test(email)) {
         this.error = 'Correo electrónico no válido'
-        return
+        return false
       }
 
       if (password.length < 6) {
         this.error = 'La contraseña debe tener al menos 6 caracteres'
-        return
+        return false
       }
 
       this.loading = true
@@ -29,12 +29,11 @@ export const useUserStore = defineStore('user', {
       try {
         const res = await api.post('users/signup', { username, email, password })
         this.user = res.data.user
-        this.token = res.data.token
         localStorage.setItem('user', JSON.stringify(res.data.user))
-        localStorage.setItem('token', res.data.token)
+        return true
       } catch (err: any) {
         this.error = err.response?.data?.message || 'Error al registrarse'
-        console.error('❌ Error en signup:', this.error)
+        return false
       } finally {
         this.loading = false
       }
@@ -54,9 +53,8 @@ export const useUserStore = defineStore('user', {
       try {
         const res = await api.post('auth/login', { email, password })
         this.user = res.data.user
-        this.token = res.data.token
+        this.token = null
         localStorage.setItem('user', JSON.stringify(res.data.user))
-        localStorage.setItem('token', res.data.token)
         return true
       } catch (err: any) {
         this.error = err.response?.data?.message || 'Error al iniciar sesión'

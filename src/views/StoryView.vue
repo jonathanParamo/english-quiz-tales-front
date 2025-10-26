@@ -24,7 +24,7 @@ onMounted(async () => {
     story.value = storyRes.data
     images.value = story.value.images || []
 
-    const questionsRes = await api.get(`questions/${storyId}/random/10`)
+    const questionsRes = await api.get(`questions/${storyId}/random/15`)
     questions.value = questionsRes.data.map((q: any) => {
       let selectedValue = q.selected
 
@@ -67,11 +67,22 @@ const revealStory = () => {
 
 const submitAnswers = async () => {
   try {
-    const answers = questions.value.map((q) => ({
-      questionId: q._id,
-      type: q.type || 'multiple',
-      selected: q.selected || '',
-    }))
+    const answers = questions.value.map((q) => {
+      let selected = q.selected
+
+      if (typeof selected === 'string') {
+        selected = selected.trim()
+        if (selected === '' || selected.toLowerCase() === 'escribe la frase') {
+          selected = null
+        }
+      }
+
+      return {
+        questionId: q._id,
+        type: q.type || 'multiple',
+        selected: selected,
+      }
+    })
 
     const payload = {
       storyId,
