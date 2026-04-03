@@ -1,20 +1,20 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { checkAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 import LoginPage from '@/pages/LoginPage'
 import SignupPage from '@/pages/SignupPage'
 import HomePage from '@/pages/HomePage'
 import StoryPage from '@/pages/StoryPage'
 import ProfilePage from '@/pages/ProfilePage'
 
-// Guard que protege rutas privadas — equivalente al router.beforeEach de Vue
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true)
   const [authed, setAuthed] = useState(false)
   const location = useLocation()
+  const { checkAuth } = useAuth()
 
   useEffect(() => {
-    checkAuth().then((ok) => {
+    checkAuth().then((ok: boolean) => {
       setAuthed(ok)
       setChecking(false)
     })
@@ -37,9 +37,30 @@ export default function AppRouter() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
-      <Route path="/story/:id" element={<PrivateRoute><StoryPage /></PrivateRoute>} />
-      <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+      <Route
+        path="/home"
+        element={
+          <PrivateRoute>
+            <HomePage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/story/:id"
+        element={
+          <PrivateRoute>
+            <StoryPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <ProfilePage />
+          </PrivateRoute>
+        }
+      />
     </Routes>
   )
 }
