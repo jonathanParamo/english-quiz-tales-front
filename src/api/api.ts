@@ -1,15 +1,15 @@
-import apiFetch from "./apiFetch";
+import apiFetch from './apiFetch'
+
+type RequestBody = Record<string, unknown> | FormData | unknown[]
 
 const api = {
-  post: <T>(endpoint: string, body: Record<string, unknown>) =>
-    apiFetch<T>(endpoint, { method: "POST", body }),
+  post: <T>(endpoint: string, body: RequestBody) => apiFetch<T>(endpoint, { method: 'POST', body }),
 
-  get: <T>(endpoint: string) => apiFetch<T>(endpoint, { method: "GET" }),
+  get: <T>(endpoint: string) => apiFetch<T>(endpoint, { method: 'GET' }),
 
-  put: <T>(endpoint: string, body: Record<string, unknown>) =>
-    apiFetch<T>(endpoint, { method: "PUT", body }),
+  put: <T>(endpoint: string, body: RequestBody) => apiFetch<T>(endpoint, { method: 'PUT', body }),
 
-  delete: <T>(endpoint: string) => apiFetch<T>(endpoint, { method: "DELETE" }),
-};
+  delete: <T>(endpoint: string) => apiFetch<T>(endpoint, { method: 'DELETE' }),
+}
 
-export default api;
+export default api

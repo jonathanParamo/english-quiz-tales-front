@@ -1,28 +1,31 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = import.meta.env.VITE_API_URL
 
-interface RequestOptions extends Omit<RequestInit, "body"> {
-  body?: Record<string, unknown>;
+type RequestBody = Record<string, unknown> | FormData | unknown[]
+
+interface RequestOptions extends Omit<RequestInit, 'body'> {
+  body?: RequestBody
 }
 
-async function apiFetch<T>(
-  endpoint: string,
-  options: RequestOptions = {},
-): Promise<T> {
+async function apiFetch<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  const { body, headers, ...rest } = options
+
+  const isFormData = body instanceof FormData
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    credentials: "include",
+    ...rest,
+    credentials: 'include',
     headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
+      ...(headers || {}),
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
+  })
 
   if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
+    throw new Error(`Error ${response.status}: ${response.statusText}`)
   }
 
-  return response.json() as Promise<T>;
+  return response.json() as Promise<T>
 }
 
-export default apiFetch;
+export default apiFetch

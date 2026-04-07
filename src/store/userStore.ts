@@ -6,6 +6,13 @@ interface User {
   id: string
   username: string
   role: string
+  avgScore?: number
+  progress?: {
+    totalResults: number
+    avgScore: number
+    recentMistakes: string[]
+    level: string
+  }
 }
 
 interface UserState {
