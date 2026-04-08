@@ -385,7 +385,7 @@ function AdminContent() {
                       className="font-mono uppercase tracking-widest mt-3"
                       style={{ fontSize: 9, color: 'rgba(167,139,250,0.25)' }}
                     >
-                      Selecciona un cuento para comenzar
+                      Choose a story to begin.
                     </p>
                   </div>
                 )}

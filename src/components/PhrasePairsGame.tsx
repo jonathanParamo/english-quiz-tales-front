@@ -5,6 +5,7 @@ import apiFetch from '../api/apiFetch'
 
 // ── Tipos ──────────────────────────────────────────────────────────────
 type Level = 'beginner' | 'intermediate' | 'advanced'
+type CardMode = 'text' | 'listen'
 
 interface PhrasePair {
   _id: string
@@ -45,6 +46,39 @@ const LEVEL_COLORS: Record<Level, string> = {
   advanced: '#f43f5e',
 }
 
+// Color morado neón para hover
+const NEON_PURPLE = '#b455ff'
+
+// ── TTS helpers ────────────────────────────────────────────────────────
+const TTS_LANG: Record<'es' | 'en', string> = {
+  es: 'es-ES',
+  en: 'en-US',
+}
+
+let currentUtterance: SpeechSynthesisUtterance | null = null
+
+function speakText(text: string, lang: 'es' | 'en') {
+  if (!window.speechSynthesis) return
+  window.speechSynthesis.cancel()
+  const utter = new SpeechSynthesisUtterance(text)
+  utter.lang = TTS_LANG[lang]
+  utter.rate = 0.9
+  utter.pitch = 1
+  currentUtterance = utter
+  window.speechSynthesis.speak(utter)
+}
+
+function stopTTS() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel()
+  currentUtterance = null
+}
+
+// ── Audio ──────────────────────────────────────────────────────────────
+function playAudio(url: string) {
+  const audio = new Audio(url)
+  audio.play().catch(() => {})
+}
+
 // ── Three.js fondo ─────────────────────────────────────────────────────
 function GameParticles({ color }: { color: string }) {
   const ref = useRef<THREE.Points>(null!)
@@ -79,23 +113,82 @@ function GameParticles({ color }: { color: string }) {
   )
 }
 
-// ── Audio ──────────────────────────────────────────────────────────────
-function playAudio(url: string) {
-  const audio = new Audio(url)
-  audio.play().catch(() => {})
-}
-
 // ── Shuffle ────────────────────────────────────────────────────────────
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
 }
+
+// ── Icono de altavoz ───────────────────────────────────────────────────
+function SpeakerIcon({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M3 7H6L11 3V17L6 13H3V7Z"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <path
+        d="M14 7C14.8 7.8 15.3 8.85 15.3 10C15.3 11.15 14.8 12.2 14 13"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M16.5 5C18 6.5 19 8.15 19 10C19 11.85 18 13.5 16.5 15"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
+// ── Icono de texto ─────────────────────────────────────────────────────
+function TextIcon({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M3 5H17M3 10H13M3 15H10" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// ── CSS global ─────────────────────────────────────────────────────────
+const globalStyles = `
+@keyframes wavebar {
+  from { transform: scaleY(0.5); }
+  to   { transform: scaleY(1.6); }
+}
+@keyframes neonPulse {
+  0%, 100% { box-shadow: 0 0 6px ${NEON_PURPLE}60, 0 0 12px ${NEON_PURPLE}30; }
+  50%       { box-shadow: 0 0 10px ${NEON_PURPLE}90, 0 0 22px ${NEON_PURPLE}50; }
+}
+`
 
 // ── Tarjeta individual del juego ───────────────────────────────────────
 function GameCardTile({
   card,
   flash,
   accentColor,
+  cardMode,
+  isSpeaking,
   onClick,
+  onAudioClick,
   onDragStart,
   onDrop,
   onDragOver,
@@ -103,13 +196,17 @@ function GameCardTile({
   card: GameCard
   flash: boolean | null
   accentColor: string
+  cardMode: CardMode
+  isSpeaking: boolean
   onClick: () => void
+  onAudioClick: (e: React.MouseEvent) => void
   onDragStart: (e: React.DragEvent) => void
   onDrop: (e: React.DragEvent) => void
   onDragOver: (e: React.DragEvent) => void
 }) {
   const [hovered, setHovered] = useState(false)
 
+  // Borde: matched verde, flash ok/error, selected acento, hover NEÓN MORADO, default sutil
   const borderColor = card.matched
     ? 'rgba(52,211,153,0.35)'
     : flash === true
@@ -119,7 +216,7 @@ function GameCardTile({
         : card.selected
           ? accentColor + '60'
           : hovered
-            ? 'rgba(124,92,252,0.3)'
+            ? `${NEON_PURPLE}cc`
             : 'rgba(255,255,255,0.07)'
 
   const bgColor = card.matched
@@ -131,8 +228,17 @@ function GameCardTile({
         : card.selected
           ? accentColor + '12'
           : hovered
-            ? 'rgba(124,92,252,0.06)'
+            ? `${NEON_PURPLE}10`
             : 'rgba(13,13,22,0.8)'
+
+  // Glow neón en hover
+  const boxShadow = card.matched
+    ? 'none'
+    : card.selected
+      ? `0 0 12px ${accentColor}30`
+      : hovered
+        ? `0 0 8px ${NEON_PURPLE}55, 0 0 20px ${NEON_PURPLE}25`
+        : 'none'
 
   return (
     <div
@@ -153,10 +259,11 @@ function GameCardTile({
         transform: card.selected
           ? 'scale(1.02)'
           : hovered && !card.matched
-            ? 'translateY(-1px)'
+            ? 'translateY(-2px)'
             : 'none',
-        boxShadow: card.selected ? `0 0 12px ${accentColor}30` : 'none',
+        boxShadow,
         minHeight: 56,
+        transition: 'all 0.18s ease',
       }}
     >
       {/* Imagen opcional */}
@@ -175,22 +282,59 @@ function GameCardTile({
         </div>
       )}
 
-      <div className="p-3 sm:p-4">
+      {/* ── Layout principal: icono audio + texto, siempre juntos ── */}
+      <div className="flex items-center gap-2 p-3 sm:p-4">
+        {/* Botón de audio — siempre visible en ambos modos */}
+        <button
+          onClick={onAudioClick}
+          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150"
+          style={{
+            background: isSpeaking ? accentColor : accentColor + '18',
+            border: `1px solid ${accentColor}45`,
+            cursor: 'pointer',
+            boxShadow: isSpeaking ? `0 0 10px ${accentColor}60` : 'none',
+          }}
+        >
+          {isSpeaking ? (
+            /* Animación de ondas mientras habla */
+            <span style={{ display: 'flex', gap: 2, alignItems: 'center', height: 14 }}>
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  style={{
+                    width: 2,
+                    borderRadius: 2,
+                    background: '#080810',
+                    animation: `wavebar 0.7s ease-in-out ${i * 0.15}s infinite alternate`,
+                    height: 6 + i * 3,
+                  }}
+                />
+              ))}
+            </span>
+          ) : (
+            <SpeakerIcon size={12} color={accentColor} />
+          )}
+        </button>
+
+        {/* Texto de la tarjeta — siempre visible, clickeable para emparejar */}
         <p
-          className="font-serif text-sm leading-relaxed m-0"
+          className="font-serif text-sm leading-relaxed m-0 flex-1"
           style={{
             color: card.matched
               ? 'rgba(52,211,153,0.6)'
               : card.selected
                 ? '#e8e0f0'
-                : 'rgba(255,255,255,0.7)',
+                : hovered
+                  ? 'rgba(255,255,255,0.92)'
+                  : 'rgba(255,255,255,0.7)',
+            transition: 'color 0.18s ease',
           }}
         >
           {card.text}
         </p>
       </div>
 
-      {/* Indicadores */}
+      {/* Indicador matched */}
       {card.matched && (
         <div
           className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
@@ -199,22 +343,17 @@ function GameCardTile({
           <span style={{ fontSize: 8, color: '#34d399' }}>✓</span>
         </div>
       )}
-      {card.audioUrl && !card.matched && (
-        <div
-          className="absolute top-2 right-2"
-          style={{ fontSize: 8, color: 'rgba(124,92,252,0.35)' }}
-        >
-          ♪
-        </div>
-      )}
 
+      {/* Línea inferior decorativa */}
       <div
         className="absolute bottom-0 left-0 right-0 h-px rounded-b-xl transition-all duration-200"
         style={{
           background: card.matched
             ? 'linear-gradient(90deg,transparent,#34d399,transparent)'
-            : `linear-gradient(90deg,transparent,${accentColor},transparent)`,
-          opacity: card.matched ? 0.4 : card.selected || hovered ? 0.3 : 0.08,
+            : hovered
+              ? `linear-gradient(90deg,transparent,${NEON_PURPLE},transparent)`
+              : `linear-gradient(90deg,transparent,${accentColor},transparent)`,
+          opacity: card.matched ? 0.4 : hovered ? 0.6 : card.selected ? 0.3 : 0.08,
         }}
       />
     </div>
@@ -236,6 +375,8 @@ export default function PhrasePairsGame({
   const [finished, setFinished] = useState(false)
   const [flash, setFlash] = useState<{ id: string; ok: boolean } | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [cardMode, setCardMode] = useState<CardMode>('text')
+  const [speakingId, setSpeakingId] = useState<string | null>(null)
   const dragId = useRef<string | null>(null)
 
   const isMobile = () => window.matchMedia('(pointer: coarse)').matches
@@ -253,6 +394,12 @@ export default function PhrasePairsGame({
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [level, category, pairCount])
+
+  // Detener TTS al cambiar de modo
+  useEffect(() => {
+    stopTTS()
+    setSpeakingId(null)
+  }, [cardMode])
 
   const buildCards = (data: PhrasePair[]) => {
     const esCards: GameCard[] = data.map((p) => ({
@@ -303,9 +450,9 @@ export default function PhrasePairsGame({
     })
   }, [])
 
+  // Click principal — funciona en AMBOS modos (texto y escucha)
   const handleCardClick = (card: GameCard) => {
     if (card.matched) return
-    if (card.audioUrl) playAudio(card.audioUrl)
 
     if (!selectedId) {
       setSelectedId(card.id)
@@ -323,11 +470,40 @@ export default function PhrasePairsGame({
     tryMatch(prev, card.id)
   }
 
+  // Click en el botón de audio — solo reproduce, NO selecciona ni empareja
+  const handleAudioClick = (e: React.MouseEvent, card: GameCard) => {
+    e.stopPropagation() // evita que llegue al onClick de la tarjeta
+
+    if (speakingId === card.id) {
+      stopTTS()
+      setSpeakingId(null)
+      return
+    }
+
+    setSpeakingId(card.id)
+
+    if (card.audioUrl) {
+      playAudio(card.audioUrl)
+      setTimeout(() => setSpeakingId((id) => (id === card.id ? null : id)), 3000)
+    } else {
+      speakText(card.text, card.lang)
+      if (window.speechSynthesis) {
+        const check = () => {
+          if (!window.speechSynthesis.speaking) {
+            setSpeakingId((id) => (id === card.id ? null : id))
+          } else {
+            setTimeout(check, 200)
+          }
+        }
+        setTimeout(check, 300)
+      }
+    }
+  }
+
   const handleDragStart = (e: React.DragEvent, card: GameCard) => {
     if (card.matched || isMobile()) return
     dragId.current = card.id
     e.dataTransfer.effectAllowed = 'move'
-    if (card.audioUrl) playAudio(card.audioUrl)
   }
 
   const handleDrop = (e: React.DragEvent, target: GameCard) => {
@@ -339,11 +515,19 @@ export default function PhrasePairsGame({
 
   const handleDragOver = (e: React.DragEvent) => e.preventDefault()
 
+  const toggleMode = () => {
+    setCardMode((m) => (m === 'text' ? 'listen' : 'text'))
+    setSelectedId(null)
+    setCards((prev) => prev.map((c) => ({ ...c, selected: false })))
+  }
+
   const restart = () => {
     setScore(0)
     setErrors(0)
     setFinished(false)
     setSelectedId(null)
+    setSpeakingId(null)
+    stopTTS()
     dragId.current = null
     buildCards(pairs)
   }
@@ -374,6 +558,9 @@ export default function PhrasePairsGame({
 
   return (
     <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#080810' }}>
+      {/* CSS global */}
+      <style>{globalStyles}</style>
+
       <div className="fixed inset-0 z-0 pointer-events-none">
         <Canvas
           camera={{ position: [0, 0, 7], fov: 50 }}
@@ -392,27 +579,27 @@ export default function PhrasePairsGame({
 
       {/* HUD top */}
       <div
-        className="relative z-10 sticky top-0 px-6 py-3 flex items-center justify-between"
+        className="relative z-10 sticky top-0 px-4 sm:px-6 py-3 flex items-center justify-between gap-2"
         style={{
           background: 'rgba(8,8,16,0.85)',
           backdropFilter: 'blur(20px)',
           borderBottom: `1px solid ${levelColor}20`,
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div
-            className="w-2 h-2 rounded-full animate-pulse"
+            className="w-2 h-2 flex-shrink-0 rounded-full animate-pulse"
             style={{ background: levelColor, boxShadow: `0 0 8px ${levelColor}` }}
           />
           <span
-            className="font-mono uppercase tracking-widest"
+            className="font-mono uppercase tracking-widest truncate"
             style={{ color: levelColor + '80', fontSize: 9 }}
           >
             PHRASE MATCH · {level.toUpperCase()}
           </span>
           {category && (
             <span
-              className="font-mono px-2 py-0.5 rounded"
+              className="font-mono px-2 py-0.5 rounded flex-shrink-0"
               style={{
                 fontSize: 8,
                 color: levelColor + '99',
@@ -424,7 +611,38 @@ export default function PhrasePairsGame({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* ── Toggle modo texto / escucha ── */}
+          <button
+            onClick={toggleMode}
+            title={cardMode === 'text' ? 'Cambiar a modo escucha' : 'Cambiar a modo texto'}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200"
+            style={{
+              background: cardMode === 'listen' ? levelColor + '18' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${cardMode === 'listen' ? levelColor + '50' : 'rgba(255,255,255,0.1)'}`,
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ color: cardMode === 'listen' ? levelColor : 'rgba(255,255,255,0.3)' }}>
+              {cardMode === 'listen' ? (
+                <SpeakerIcon size={13} color={levelColor} />
+              ) : (
+                <TextIcon size={13} color="rgba(255,255,255,0.3)" />
+              )}
+            </span>
+            <span
+              className="font-mono uppercase tracking-widest hidden sm:inline"
+              style={{
+                fontSize: 8,
+                color: cardMode === 'listen' ? levelColor : 'rgba(255,255,255,0.3)',
+              }}
+            >
+              {cardMode === 'listen' ? 'escucha' : 'texto'}
+            </span>
+          </button>
+
+          {/* Score */}
           <div className="text-center">
             <p
               className="font-mono m-0"
@@ -465,17 +683,38 @@ export default function PhrasePairsGame({
         </div>
       </div>
 
-      {/* Instrucción */}
+      {/* Instrucción dinámica */}
       <div className="relative z-10 text-center py-4">
         <p
           className="font-mono uppercase tracking-widest"
           style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)' }}
         >
-          {isMobile()
-            ? 'Toca una frase en español y luego su traducción en inglés'
-            : 'Arrastra o toca cada frase española hacia su traducción en inglés'}
+          {cardMode === 'listen'
+            ? 'Escucha el audio con 🔊 y luego empareja tocando o arrastrando las tarjetas'
+            : isMobile()
+              ? 'Toca una frase en español y luego su traducción en inglés'
+              : 'Arrastra o toca cada frase española hacia su traducción en inglés'}
         </p>
       </div>
+
+      {/* ── Banner modo escucha ── */}
+      {cardMode === 'listen' && (
+        <div
+          className="relative z-10 mx-4 sm:mx-6 mb-3 px-4 py-2.5 rounded-xl flex items-center gap-3"
+          style={{
+            background: levelColor + '0a',
+            border: `1px solid ${levelColor}25`,
+          }}
+        >
+          <SpeakerIcon size={14} color={levelColor} />
+          <p
+            className="font-mono uppercase tracking-widest m-0"
+            style={{ fontSize: 8, color: levelColor + '99' }}
+          >
+            Modo escucha — pulsa 🔊 para oír, luego toca o arrastra para emparejar
+          </p>
+        </div>
+      )}
 
       {/* Tablero */}
       <div className="relative z-10 px-4 pb-24 max-w-4xl mx-auto">
@@ -496,7 +735,10 @@ export default function PhrasePairsGame({
                 card={card}
                 flash={flash?.id === card.id ? flash.ok : null}
                 accentColor={levelColor}
+                cardMode={cardMode}
+                isSpeaking={speakingId === card.id}
                 onClick={() => handleCardClick(card)}
+                onAudioClick={(e) => handleAudioClick(e, card)}
                 onDragStart={(e) => handleDragStart(e, card)}
                 onDrop={(e) => handleDrop(e, card)}
                 onDragOver={handleDragOver}
@@ -519,7 +761,10 @@ export default function PhrasePairsGame({
                 card={card}
                 flash={flash?.id === card.id ? flash.ok : null}
                 accentColor={levelColor}
+                cardMode={cardMode}
+                isSpeaking={speakingId === card.id}
                 onClick={() => handleCardClick(card)}
+                onAudioClick={(e) => handleAudioClick(e, card)}
                 onDragStart={(e) => handleDragStart(e, card)}
                 onDrop={(e) => handleDrop(e, card)}
                 onDragOver={handleDragOver}
@@ -755,7 +1000,6 @@ export function AdminPhrasePairsPanel({ onCreated }: AdminProps) {
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* Español */}
         <div className="flex flex-col gap-1.5">
           <label
             className="font-mono uppercase tracking-widest"
@@ -772,7 +1016,6 @@ export function AdminPhrasePairsPanel({ onCreated }: AdminProps) {
           />
         </div>
 
-        {/* English */}
         <div className="flex flex-col gap-1.5">
           <label
             className="font-mono uppercase tracking-widest"
@@ -789,7 +1032,6 @@ export function AdminPhrasePairsPanel({ onCreated }: AdminProps) {
           />
         </div>
 
-        {/* Nivel */}
         <div className="flex gap-2">
           {(['beginner', 'intermediate', 'advanced'] as Level[]).map((l) => (
             <button
@@ -808,7 +1050,6 @@ export function AdminPhrasePairsPanel({ onCreated }: AdminProps) {
           ))}
         </div>
 
-        {/* Categoría */}
         <div className="flex flex-col gap-1.5">
           <label
             className="font-mono uppercase tracking-widest"
@@ -825,7 +1066,6 @@ export function AdminPhrasePairsPanel({ onCreated }: AdminProps) {
           />
         </div>
 
-        {/* Imagen */}
         <div className="flex flex-col gap-1.5">
           <label
             className="font-mono uppercase tracking-widest"
@@ -851,7 +1091,6 @@ export function AdminPhrasePairsPanel({ onCreated }: AdminProps) {
           {fileBtn('Subir imagen', imageFile, 'image/*', handleImageChange, '#34d399')}
         </div>
 
-        {/* Audios */}
         <div className="flex flex-col gap-2">
           <label
             className="font-mono uppercase tracking-widest"
@@ -871,7 +1110,6 @@ export function AdminPhrasePairsPanel({ onCreated }: AdminProps) {
           </div>
         </div>
 
-        {/* Botón guardar */}
         <button
           onClick={handleSave}
           disabled={saving}
