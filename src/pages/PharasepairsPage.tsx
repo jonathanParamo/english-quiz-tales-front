@@ -315,7 +315,7 @@ export default function PhrasePairsPage() {
   // ── Juego ────────────────────────────────────────────────────────
   if (screen === 'game') {
     return (
-      <PhrasePairsGame // ← esto, no AdminPhrasePairsPanel
+      <PhrasePairsGame
         level={selectedLevel}
         category={selectedCat || undefined}
         pairCount={pairCount}

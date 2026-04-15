@@ -193,7 +193,6 @@ function useTTS() {
       utter.rate = 0.95
       utter.pitch = 1.05
       utter.volume = 1
-      // Preferir voz en inglés si existe
       const voices = window.speechSynthesis.getVoices()
       const enVoice =
         voices.find((v) => v.lang.startsWith('en') && v.localService) ||
@@ -287,7 +286,6 @@ export default function AiTutorChat({ avgScore, userProgress, onClose }: Props) 
       })
       const reply = res.reply
       setMessages((prev) => [...prev, { role: 'assistant', content: reply, time: now() }])
-      // Reproducir automáticamente si modo audio
       if (mode === 'audio' && ttsSupported) {
         speak(reply)
       }

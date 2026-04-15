@@ -262,6 +262,24 @@ export default function HomePage() {
         >
           Phrase Pairs
         </button>
+        <button
+          onClick={() => navigate('/practice')}
+          className="font-mono text-xs uppercase tracking-widest transition-all"
+          style={{ color: '#f59e0b', fontSize: 10 }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#f59e0b')}
+        >
+          Practice
+        </button>
+        <button
+          onClick={() => navigate('/videos')}
+          className="font-mono text-xs uppercase tracking-widest transition-all"
+          style={{ color: '#4fdfe9', fontSize: 10 }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#f59e0b')}
+        >
+          Video
+        </button>
       </div>
 
       {/* ── Grid de historias ────────────────────────────────── */}

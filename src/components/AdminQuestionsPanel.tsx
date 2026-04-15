@@ -52,12 +52,9 @@ const emptyForm = () => ({
   points: 1,
   explanation: '',
   sceneTag: '',
-  // multiple / choose_correct_sentence
   options: ['', '', '', ''],
   correctAnswer: '',
-  // matching: "cat|gato,dog|perro"
   matchingRaw: '',
-  // true_false
   tfAnswer: 'true',
 })
 
@@ -94,7 +91,6 @@ export default function AdminQuestionsPanel({ storyId, storyTitle, onCreated }: 
       case 'true_false':
         return form.tfAnswer
       case 'matching': {
-        // "cat|gato,dog|perro" → [["cat","gato"],["dog","perro"]] → guardado como JSON string
         const pairs = form.matchingRaw
           .split(',')
           .map((p) => p.trim())
@@ -150,7 +146,6 @@ export default function AdminQuestionsPanel({ storyId, storyTitle, onCreated }: 
       if (form.explanation.trim()) fd.append('explanation', form.explanation.trim())
       if (form.sceneTag.trim()) fd.append('sceneTag', form.sceneTag.trim())
 
-      // options solo para múltiple / choose_correct_sentence
       if (form.type === 'multiple' || form.type === 'choose_correct_sentence') {
         const opts = form.options.filter((o) => o.trim())
         fd.append('options', JSON.stringify(opts))

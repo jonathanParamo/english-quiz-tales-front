@@ -19,13 +19,11 @@ export default function App() {
     const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current })
     renderer.setSize(window.innerWidth, window.innerHeight)
 
-    // Ejemplo: un cubo
     const geometry = new THREE.BoxGeometry()
     const material = new THREE.MeshBasicMaterial({ color: 0x00ffb4 })
     const cube = new THREE.Mesh(geometry, material)
     scene.add(cube)
 
-    // Animación
     const animate = () => {
       requestAnimationFrame(animate)
       cube.rotation.x += 0.01
@@ -34,7 +32,6 @@ export default function App() {
     }
     animate()
 
-    // Ajustar tamaño al redimensionar
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight
       camera.updateProjectionMatrix()

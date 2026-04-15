@@ -46,7 +46,6 @@ const LEVEL_COLORS: Record<Level, string> = {
   advanced: '#f43f5e',
 }
 
-// Color morado neón para hover
 const NEON_PURPLE = '#b455ff'
 
 // ── TTS helpers ────────────────────────────────────────────────────────

@@ -10,6 +10,8 @@ import AiTutorBubble from '@/components/AiTutorBubble'
 import { useUserStore } from '@/store/userStore'
 import AdminPage from '@/pages/AdminPage'
 import PhrasePairsPage from '@/pages/PharasepairsPage'
+import PracticePage from '@/pages/PracticePage'
+import VideosDictationPage from '@/pages/VideosDictationPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true)
@@ -69,7 +71,9 @@ export default function AppRouter() {
           }
         />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/practice" element={<PracticePage />} />
         <Route path="/phrase-pairs" element={<PhrasePairsPage />} />
+        <Route path="/videos" element={<VideosDictationPage />} />
       </Routes>
       {user && <AiTutorBubble />}
     </>
