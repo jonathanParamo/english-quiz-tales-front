@@ -88,7 +88,6 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
     const fd = new FormData()
     fd.append('video', file)
     fd.append('title', title)
-    // ✅ Solo si hay letra, la enviamos
     if (lyrics?.trim()) {
       fd.append('lyrics', lyrics.trim())
     }

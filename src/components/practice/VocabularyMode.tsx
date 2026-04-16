@@ -285,7 +285,14 @@ export default function VocabularyMode() {
 
                 {/* Play button */}
                 <button
-                  onClick={() => speak(`${row.word}. ${row.col3}. Example: ${row.example}`, voice)}
+                  onClick={() =>
+                    speak(
+                      isVerbs
+                        ? `${row.word}. Past simple: ${row.col2}. Past participle: ${row.col3}. In Spanish: ${row.spanish}. Example: ${row.example}`
+                        : `${row.word}. ${row.col2}. ${row.col3}. In Spanish: ${row.spanish}. Example: ${row.example}`,
+                      voice,
+                    )
+                  }
                   className="w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
                   style={{
                     background: 'rgba(124,92,252,0.15)',

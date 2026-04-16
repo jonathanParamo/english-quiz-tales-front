@@ -48,13 +48,13 @@ export default function ListenMode() {
       ? document.verbs.map((v) => ({
           id: v.infinitive,
           main: v.infinitive,
-          detail: `Past simple: ${v.pastSimple}. Past participle: ${v.pastParticiple}. Example: ${v.example}`,
+          detail: `Past simple: ${v.pastSimple}. Past participle: ${v.pastParticiple}. In Spanish: ${v.spanish}. Example: ${v.example}`,
           preview: `${v.infinitive} → ${v.pastSimple} → ${v.pastParticiple}`,
         }))
       : document.vocabulary.map((v) => ({
           id: v.word,
           main: v.word,
-          detail: `${v.definition}. Example: ${v.example}`,
+          detail: `${v.word}. ${v.type}. ${v.definition}. In Spanish: ${v.spanish}. Example: ${v.example}`,
           preview: `${v.word} — ${v.definition.slice(0, 50)}`,
         }))
     : document.paragraphs.map((p, i) => ({

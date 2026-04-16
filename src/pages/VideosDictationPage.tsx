@@ -644,7 +644,7 @@ function PlayerScreen({ video, onBack }: { video: VideoItem; onBack: () => void 
     transcriptStatus,
     activeSegment,
     isPaused,
-    isPausedForBlank, // ← nuevo
+    isPausedForBlank,
     answers,
     currentInput,
     setCurrentInput,
@@ -654,12 +654,11 @@ function PlayerScreen({ video, onBack }: { video: VideoItem; onBack: () => void 
     rewind,
     rewindSeconds,
     mode,
-    isFinished, // ← nuevo
-    sessionResults, // ← nuevo
-    dismissResults, // ← nuevo
+    isFinished,
+    sessionResults,
+    dismissResults,
   } = useVideoDictation(video.id)
 
-  // Ventana de 3 segmentos: anterior, activo, siguiente
   const visibleSegments = [-1, 0, 1]
     .map((offset) => activeSegment + offset)
     .filter((i) => i >= 0 && i < transcript.length)
