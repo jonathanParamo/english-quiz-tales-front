@@ -7,6 +7,8 @@ import VocabularyMode from '@/components/practice/VocabularyMode'
 import WritingMode from '@/components/practice/WritingMode'
 import QuizMode from '@/components/practice/QuizMode'
 import type { PracticeMode } from '@/store/usePracticeStore'
+import DictationMode from '@/components/practice/DictationMode'
+import ShadowingMode from '@/components/practice/ShadowingMode'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -32,6 +34,8 @@ const MODES: { id: PracticeMode; icon: string; label: string; sub: string }[] = 
   { id: 'vocabulary', icon: '◈', label: 'Vocabulary', sub: 'Table & meaning' },
   { id: 'writing', icon: '◆', label: 'Writing', sub: 'Practice & feedback' },
   { id: 'quiz', icon: '◎', label: 'Quiz', sub: 'Test yourself' },
+  { id: 'dictation', icon: '✎', label: 'Dictation', sub: 'Listen & write' },
+  { id: 'shadowing', icon: '🎤', label: 'Shadowing', sub: 'Speak & mimic' },
 ]
 
 // ── Upload Screen ──────────────────────────────────────────────────────────
@@ -431,7 +435,8 @@ export default function PracticePage() {
         {activeMode === 'listen' && <ListenMode />}
         {activeMode === 'vocabulary' && <VocabularyMode />}
         {activeMode === 'writing' && <WritingMode />}
-        {activeMode === 'quiz' && <QuizMode />}
+        {activeMode === 'dictation' && <DictationMode />}
+        {activeMode === 'shadowing' && <ShadowingMode />}
       </div>
 
       {/* ── Bottom bar ── */}

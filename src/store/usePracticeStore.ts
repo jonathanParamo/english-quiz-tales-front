@@ -46,8 +46,7 @@ export interface GeneratedQuestion {
   type: string
 }
 
-export type PracticeMode = 'listen' | 'vocabulary' | 'writing' | 'quiz'
-
+export type PracticeMode = 'listen' | 'vocabulary' | 'writing' | 'quiz' | 'dictation' | 'shadowing'
 interface PracticeState {
   // Documento activo
   document: PracticeDocument | null
