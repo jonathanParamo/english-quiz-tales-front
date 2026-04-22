@@ -47,10 +47,16 @@ export interface GeneratedQuestion {
 }
 
 export type PracticeMode = 'listen' | 'vocabulary' | 'writing' | 'quiz' | 'dictation' | 'shadowing'
+
 interface PracticeState {
   // Documento activo
   document: PracticeDocument | null
   documentLoading: boolean
+
+  // Lista de documentos existentes
+  documentList: PracticeDocument[]
+  documentListLoading: boolean
+  documentListFetched: boolean
 
   // Modo activo
   activeMode: PracticeMode
@@ -66,10 +72,13 @@ interface PracticeState {
   writingFeedback: WritingFeedback | null
   writingLoading: boolean
 
-  // Sesión de tiempo (para guardar en progress)
+  // Sesión de tiempo
   sessionStart: number | null
 
   // Acciones
+  fetchDocuments: () => Promise<void>
+  selectDocument: (id: string) => Promise<void>
+  deleteDocument: (id: string) => Promise<void>
   uploadDocument: (file: File) => Promise<PracticeDocument | null>
   setDocument: (doc: PracticeDocument) => void
   setActiveMode: (mode: PracticeMode) => void
@@ -82,11 +91,12 @@ interface PracticeState {
   reset: () => void
 }
 
-// ── Store ──────────────────────────────────────────────────────────────────
-
 export const usePracticeStore = create<PracticeState>((set, get) => ({
   document: null,
   documentLoading: false,
+  documentList: [],
+  documentListLoading: false,
+  documentListFetched: false,
   activeMode: 'listen',
   quizQuestions: [],
   quizAnswers: {},
@@ -97,13 +107,54 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
   writingLoading: false,
   sessionStart: null,
 
+  fetchDocuments: async () => {
+    set({ documentListLoading: true })
+    try {
+      const docs = await api.get<PracticeDocument[]>('documents')
+      set({ documentList: docs, documentListLoading: false, documentListFetched: true })
+    } catch {
+      set({ documentListLoading: false, documentListFetched: true })
+    }
+  },
+
+  selectDocument: async (id: string) => {
+    set({ documentLoading: true })
+    try {
+      const doc = await api.get<PracticeDocument>(`documents/${id}`)
+      set({ document: doc, documentLoading: false, activeMode: 'listen', sessionStart: Date.now() })
+    } catch {
+      set({ documentLoading: false })
+    }
+  },
+
+  deleteDocument: async (id: string) => {
+    try {
+      await api.delete(`documents/${id}`)
+      const list = get().documentList.filter((d) => d._id !== id)
+      set({ documentList: list })
+      // Si el doc activo es el que se borró, limpiarlo
+      if (get().document?._id === id) {
+        set({ document: null })
+      }
+    } catch {
+      // silencioso
+    }
+  },
+
   uploadDocument: async (file: File) => {
     set({ documentLoading: true })
     try {
       const formData = new FormData()
       formData.append('file', file)
       const doc = await api.post<PracticeDocument>('documents/upload', formData)
-      set({ document: doc, documentLoading: false, activeMode: 'listen', sessionStart: Date.now() })
+      // Agregar el nuevo doc a la lista
+      set((s) => ({
+        document: doc,
+        documentLoading: false,
+        activeMode: 'listen',
+        sessionStart: Date.now(),
+        documentList: [doc, ...s.documentList],
+      }))
       return doc
     } catch (err) {
       set({ documentLoading: false })
@@ -116,7 +167,6 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
   setActiveMode: (mode) => {
     const prev = get().activeMode
     const start = get().sessionStart
-    // Guardar sesión del modo anterior si duró más de 10s
     if (start && Date.now() - start > 10000) {
       get().saveSession(prev)
     }

@@ -28,22 +28,11 @@ function answerColor(status: AnswerStatus): string {
   return 'rgba(167,139,250,0.6)'
 }
 
-/**
- * Parte el displayText en fragmentos de texto plano y el hueco (____+).
- * Devuelve un array donde los elementos con `isBlank: true` son el hueco.
- *
- * Ejemplo:
- *   "He _____ to Russia" → [{text:"He ", isBlank:false}, {text:"_____", isBlank:true}, {text:" to Russia", isBlank:false}]
- */
 function splitByBlank(displayText: string) {
   const parts = displayText.split(/(_+)/)
   return parts.filter((p) => p.length > 0).map((p) => ({ text: p, isBlank: /^_+$/.test(p) }))
 }
 
-/**
- * Renderiza una línea de karaoke con el blank inline.
- * Soporta múltiples blanks por segmento (uno a la vez si hay varios).
- */
 export default function KaraokeLine({
   text,
   blanks,

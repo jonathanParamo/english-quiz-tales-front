@@ -13,6 +13,8 @@ import PhrasePairsPage from '@/pages/PharasepairsPage'
 import PracticePage from '@/pages/PracticePage'
 import VideosDictationPage from '@/pages/VideosDictationPage'
 
+const AUTH_ROUTES = ['/login', '/signup']
+
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true)
   const [authed, setAuthed] = useState(false)
@@ -37,15 +39,64 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return authed ? <>{children}</> : <Navigate to="/login" replace />
 }
 
+function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+  const [checking, setChecking] = useState(true)
+  const [authed, setAuthed] = useState(false)
+  const { checkAuth } = useAuth()
+
+  useEffect(() => {
+    checkAuth().then((ok: boolean) => {
+      setAuthed(ok)
+      setChecking(false)
+    })
+  }, [])
+
+  if (checking) {
+    return (
+      <div
+        className="flex items-center justify-center min-h-screen"
+        style={{ background: '#080810' }}
+      >
+        <div
+          className="w-2 h-2 rounded-full animate-pulse"
+          style={{ background: '#7c5cfc', boxShadow: '0 0 12px #7c5cfc' }}
+        />
+      </div>
+    )
+  }
+
+  return authed ? <Navigate to="/home" replace /> : <>{children}</>
+}
+
 export default function AppRouter() {
   const { user } = useUserStore()
+  const location = useLocation()
+
+  const showBubble = user && !AUTH_ROUTES.includes(location.pathname)
 
   return (
     <>
       <Routes>
+        {/* / → si tiene sesión va a home, si no a login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+
+        <Route
+          path="/login"
+          element={
+            <PublicOnlyRoute>
+              <LoginPage />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicOnlyRoute>
+              <SignupPage />
+            </PublicOnlyRoute>
+          }
+        />
+
         <Route
           path="/home"
           element={
@@ -75,7 +126,8 @@ export default function AppRouter() {
         <Route path="/phrase-pairs" element={<PhrasePairsPage />} />
         <Route path="/videos" element={<VideosDictationPage />} />
       </Routes>
-      {user && <AiTutorBubble />}
+
+      {showBubble && <AiTutorBubble />}
     </>
   )
 }
