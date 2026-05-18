@@ -10,6 +10,7 @@ export interface VideoItem {
   videoUrl: string
   status: 'pending' | 'processing' | 'ready' | 'error'
   language: string
+  userSummary?: string | null
 }
 
 export interface SafeBlank {
@@ -52,6 +53,10 @@ interface VideoStore {
     blankIndex: number,
     answer: string,
   ) => Promise<{ correct: boolean; correctWord?: string }>
+
+  // ✅ Resumen del usuario
+  saveSummary: (videoId: string, summary: string) => Promise<boolean>
+
   reset: () => void
 }
 
@@ -77,6 +82,7 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
         videoUrl: v.videoUrl,
         status: v.status,
         language: v.language ?? 'en',
+        userSummary: v.userSummary ?? null,
       }))
       set({ videos, videosLoading: false })
     } catch {
@@ -102,6 +108,7 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
         videoUrl: '',
         status: res.status as VideoItem['status'],
         language: 'en',
+        userSummary: null,
       }
       set((s) => ({ videos: [newVideo, ...s.videos] }))
       return newVideo
@@ -117,7 +124,6 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
   },
 
   pollTranscript: async (videoId, difficulty, mode) => {
-    // Usar los valores del store si no se pasan explícitamente
     const d = difficulty ?? get().difficulty
     const m = mode ?? get().mode
 
@@ -152,6 +158,25 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
       })
     } catch {
       return { correct: false }
+    }
+  },
+
+  saveSummary: async (videoId, summary) => {
+    try {
+      await api.patch(`videos/${videoId}/summary`, { summary })
+
+      set((s) => ({
+        videos: s.videos.map((v) =>
+          v.id === videoId ? { ...v, userSummary: summary || null } : v,
+        ),
+        activeVideo:
+          s.activeVideo?.id === videoId
+            ? { ...s.activeVideo, userSummary: summary || null }
+            : s.activeVideo,
+      }))
+      return true
+    } catch {
+      return false
     }
   },
 

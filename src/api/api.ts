@@ -9,6 +9,9 @@ const api = {
 
   put: <T>(endpoint: string, body: RequestBody) => apiFetch<T>(endpoint, { method: 'PUT', body }),
 
+  patch: <T>(endpoint: string, body: RequestBody) =>
+    apiFetch<T>(endpoint, { method: 'PATCH', body }),
+
   delete: <T>(endpoint: string) => apiFetch<T>(endpoint, { method: 'DELETE' }),
 }
 
