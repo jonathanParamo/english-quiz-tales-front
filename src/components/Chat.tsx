@@ -20,7 +20,7 @@ interface Props {
   onClose?: () => void
 }
 
-// ── HoloFrame (sin cambios) ────────────────────────────────────────────
+// ── HoloFrame ─────────────────────────────────────────────────────────
 function HoloFrame() {
   const dotsRef = useRef<THREE.Points>(null!)
   const cornersRef = useRef<THREE.LineSegments>(null!)
@@ -185,19 +185,41 @@ function useTTS() {
   const [speaking, setSpeaking] = useState(false)
   const [supported] = useState(() => 'speechSynthesis' in window)
 
+  // Limpia emojis y símbolos que suenan horrible en TTS
+  const cleanForTTS = (text: string): string =>
+    text
+      .replace(/[\u{1F000}-\u{1FFFF}]/gu, '') // emojis altos (🌍🎉 etc)
+      .replace(/[\u{2600}-\u{27BF}]/gu, '') // símbolos misceláneos (☀️✨ etc)
+      .replace(/[\u{FE00}-\u{FE0F}]/gu, '') // variantes de presentación
+      .replace(/[*_~`#>]/g, '') // markdown
+      .replace(/\s+/g, ' ')
+      .trim()
+
   const speak = useCallback(
     (text: string) => {
       if (!supported) return
       window.speechSynthesis.cancel()
-      const utter = new SpeechSynthesisUtterance(text)
-      utter.rate = 0.95
-      utter.pitch = 1.05
+
+      const cleanText = cleanForTTS(text)
+      if (!cleanText) return
+
+      const utter = new SpeechSynthesisUtterance(cleanText)
+
+      // Parámetros más suaves y naturales
+      utter.rate = 0.88 // más pausado, menos apresurado
+      utter.pitch = 0.95 // un poco más grave, menos robótico
       utter.volume = 1
+
+      // Priorizar voces premium/enhanced/neural que suenan mucho mejor
       const voices = window.speechSynthesis.getVoices()
       const enVoice =
+        voices.find((v) => v.lang.startsWith('en') && /premium|enhanced|neural/i.test(v.name)) ||
+        voices.find((v) => v.lang === 'en-US' && v.localService) ||
         voices.find((v) => v.lang.startsWith('en') && v.localService) ||
         voices.find((v) => v.lang.startsWith('en'))
+
       if (enVoice) utter.voice = enVoice
+
       utter.onstart = () => setSpeaking(true)
       utter.onend = () => setSpeaking(false)
       utter.onerror = () => setSpeaking(false)
@@ -260,11 +282,8 @@ export default function AiTutorChat({ avgScore, userProgress, onClose }: Props) 
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  useEffect(() => {
-    if (mode === 'audio' && ttsSupported) {
-      speak(messages[0].content)
-    }
-  }, [])
+  // ── El mensaje de bienvenida NO se lee automáticamente ──
+  // Solo se leen las respuestas que llegan desde la API
 
   const send = async (text?: string) => {
     const content = (text ?? input).trim()
@@ -286,6 +305,8 @@ export default function AiTutorChat({ avgScore, userProgress, onClose }: Props) 
       })
       const reply = res.reply
       setMessages((prev) => [...prev, { role: 'assistant', content: reply, time: now() }])
+
+      // Solo leer respuestas del asistente, nunca los mensajes del usuario
       if (mode === 'audio' && ttsSupported) {
         speak(reply)
       }
@@ -352,11 +373,10 @@ export default function AiTutorChat({ avgScore, userProgress, onClose }: Props) 
           </span>
 
           <div className="ml-auto flex items-center gap-2">
-            {/* Toggle audio / texto */}
             {ttsSupported && (
               <button
                 onClick={toggleMode}
-                title={mode === 'audio' ? 'Cambiar a texto' : 'Cambiar a audio'}
+                title={mode === 'audio' ? 'Switch to text' : 'Switch to audio'}
                 style={{
                   background: mode === 'audio' ? 'rgba(124,92,252,0.2)' : 'transparent',
                   border: `1px solid ${mode === 'audio' ? 'rgba(124,92,252,0.5)' : 'rgba(124,92,252,0.2)'}`,
@@ -558,7 +578,7 @@ export default function AiTutorChat({ avgScore, userProgress, onClose }: Props) 
                   >
                     {m.time} · {m.role === 'user' ? 'YOU' : 'TRISTA'}
                   </span>
-                  {/* Botón de reproducir para mensajes de Trista en modo texto */}
+                  {/* Botón de reproducir solo para mensajes de Trista */}
                   {m.role === 'assistant' && ttsSupported && (
                     <button
                       onClick={() => handlePlayMessage(m.content)}
@@ -571,7 +591,7 @@ export default function AiTutorChat({ avgScore, userProgress, onClose }: Props) 
                         padding: '0 2px',
                         lineHeight: 1,
                       }}
-                      title="Escuchar"
+                      title="Listen"
                     >
                       {speaking ? '■' : '▶'}
                     </button>
